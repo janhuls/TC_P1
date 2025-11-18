@@ -1,6 +1,7 @@
 module DateTime where
 
 import ParseLib.Derived
+--import ParseLib.Core --Mag Dit ??!!!!
 
 -- | "Target" datatype for the DateTime parser, i.e, the parser should produce elements of this type.
 data DateTime = DateTime
@@ -38,11 +39,45 @@ newtype Second = Second {runSecond :: Int} deriving (Eq, Ord, Show)
 
 -- Exercise 1
 parseDateTime :: Parser Char DateTime
-parseDateTime = undefined
+parseDateTime = DateTime <$> parseDate <*> parseTime <*> parseutc
+
+
+parseDate :: Parser Char Date
+parseDate = Date <$> parseYear <*> parseMonth <*> parseDay
+
+parseYear :: Parser Char Year
+parseYear = Year <$> natural
+
+parseMonth :: Parser Char Month
+parseMonth = Month <$> natural
+
+parseDay :: Parser Char Day
+parseDay = Day <$> natural
+
+parseTime :: Parser Char Time
+parseTime = Time <$> parseHour <*> parseMinute <*> parseSecond
+
+parseHour :: Parser Char Hour
+parseHour = Hour <$> natural
+
+parseMinute :: Parser Char Minute
+parseMinute = fmap Minute natural
+
+parseSecond :: Parser Char Second
+parseSecond = Second <$> natural
+
+
+parseutc :: Parser Char Bool
+parseutc = (== 'Z') <$> anySymbol
 
 -- Exercise 2
 run :: Parser a b -> [a] -> Maybe b
-run = undefined
+run p s = undefined {- findEmpty (runParser p s)
+  where
+    findEmpty :: [(b, [a])] -> Maybe b
+    findEmpty []          = Nothing
+    findEmpty ((r, []):_) = Just r
+    findEmpty (_:xs)      = findEmpty xs -}
 
 -- Exercise 3
 printDateTime :: DateTime -> String

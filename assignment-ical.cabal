@@ -14,7 +14,7 @@ common config
   -- These libraries & versions are what the autograder has.
   -- Change at your own risk!
   build-depends:
-    , base       == 4.19.2.0
+    , base       >= 4.15
     , containers == 0.6.8
 
 library
