@@ -17,11 +17,11 @@ data Date = Date
   }
   deriving (Eq, Ord, Show)
 
-newtype Year = Year {runYear :: Int} deriving (Eq, Ord, Show)
+newtype Year = Year {runYear :: Int4Digits} deriving (Eq, Ord, Show)
 
-newtype Month = Month {runMonth :: Int} deriving (Eq, Ord, Show)
+newtype Month = Month {runMonth :: Int2Digits} deriving (Eq, Ord, Show)
 
-newtype Day = Day {runDay :: Int} deriving (Eq, Ord, Show)
+newtype Day = Day {runDay :: Int2Digits} deriving (Eq, Ord, Show)
 
 data Time = Time
   { hour :: Hour,
@@ -30,11 +30,11 @@ data Time = Time
   }
   deriving (Eq, Ord, Show)
 
-newtype Hour = Hour {runHour :: Int} deriving (Eq, Ord, Show)
+newtype Hour = Hour {runHour :: Int2Digits} deriving (Eq, Ord, Show)
 
-newtype Minute = Minute {runMinute :: Int} deriving (Eq, Ord, Show)
+newtype Minute = Minute {runMinute :: Int2Digits} deriving (Eq, Ord, Show)
 
-newtype Second = Second {runSecond :: Int} deriving (Eq, Ord, Show)
+newtype Second = Second {runSecond :: Int2Digits} deriving (Eq, Ord, Show)
 
 -- Exercise 1
 parseDateTime :: Parser Char DateTime
@@ -67,20 +67,20 @@ parseSecond = Second <$> parse2Digits
 
 
 parseutc :: Parser Char Bool
-parseutc = True <$ symbol 'Z' <<|> (False <$ epsilon) 
+parseutc = True <$ symbol 'Z' <<|> (False <$ epsilon)
 
 
-parse2Digits :: Parser Char Int
+parse2Digits :: Parser Char Int2Digits
 parse2Digits = collapse2Digits <$> newdigit <*> newdigit
 
-collapse2Digits :: Int -> Int -> Int
-collapse2Digits a b = a * 10 + b
+collapse2Digits :: Int -> Int -> Int2Digits
+collapse2Digits a b = Int2Digits $ a * 10 + b
 
-parse4Digits :: Parser Char Int
+parse4Digits :: Parser Char Int4Digits
 parse4Digits = collapse4Digits <$> newdigit <*> newdigit <*> newdigit <*> newdigit
 
-collapse4Digits :: Int -> Int -> Int -> Int -> Int
-collapse4Digits a b c d = 1000 * a + 100 * b + 10 * c + d
+collapse4Digits :: Int -> Int -> Int -> Int -> Int4Digits
+collapse4Digits a b c d = Int4Digits $ 1000 * a + 100 * b + 10 * c + d
 
 
 -- Exercise 2
@@ -90,11 +90,32 @@ run p s = findEmpty (parse p s)
     findEmpty :: [(b, [a])] -> Maybe b
     findEmpty []          = Nothing
     findEmpty ((r, []):_) = Just r
-    findEmpty (_:xs)      = findEmpty xs 
+    findEmpty (_:xs)      = findEmpty xs
 
 -- Exercise 3
 printDateTime :: DateTime -> String
-printDateTime = undefined
+printDateTime (DateTime {date = Date {year = yr, month = mo, day = d},
+                         time = Time {hour = hr, minute = min, second = sec},
+                         utc = u}) = show (runYear yr) ++
+                          concatMap show
+                          [runMonth mo, runDay d ] ++
+                          "T" ++
+                          concatMap show
+                          [runHour hr, runMinute min, runSecond sec]
+                          ++ if u then "Z" else ""
+
+newtype Int2Digits = Int2Digits Int deriving (Eq, Ord)
+newtype Int4Digits = Int4Digits Int deriving (Eq, Ord)
+
+instance Show Int2Digits where
+  show (Int2Digits i) = if i < 10 then '0' : show i else show i
+
+instance Show Int4Digits where
+  show (Int4Digits i)
+    | i < 10 = '0' : '0' : '0' : show i
+    | i < 100 = '0' : '0' : show i
+    | i < 1000 = '0' : show i
+    | otherwise = show i
 
 -- Exercise 4
 parsePrint :: [Char] -> Maybe String
