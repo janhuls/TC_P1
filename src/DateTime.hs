@@ -107,6 +107,11 @@ printDateTime (DateTime {date = Date {year = yr, month = mo, day = d},
 newtype Int2Digits = Int2Digits Int deriving (Eq, Ord)
 newtype Int4Digits = Int4Digits Int deriving (Eq, Ord)
 
+getIntFromInt2Digits :: Int2Digits -> Int
+getIntFromInt2Digits (Int2Digits i) = i
+getIntFromInt4Digits :: Int4Digits -> Int
+getIntFromInt4Digits (Int4Digits i) = i
+
 instance Show Int2Digits where
   show (Int2Digits i) = if i < 10 then '0' : show i else show i
 
@@ -123,4 +128,19 @@ parsePrint s = fmap printDateTime (run parseDateTime s)
 
 -- Exercise 5
 checkDateTime :: DateTime -> Bool
-checkDateTime = undefined
+checkDateTime (DateTime {date = d, time = t}) = checkDate d && checkTime t
+
+checkDate :: Date -> Bool
+checkDate = undefined
+
+checkTime :: Time -> Bool 
+checkTime (Time {hour = hour, minute = minute, second = second}) = 
+  let hr = getIntFromInt2Digits $ runHour hour
+      min = getIntFromInt2Digits $ runMinute minute
+      sec = getIntFromInt2Digits $ runSecond second in
+        inRange hr 0 23 &&
+        inRange min 0 59 &&
+        inRange sec 0 59
+
+inRange :: (Ord a, Eq a) => a -> a -> a -> Bool
+inRange x a b = a <= x && b >= x
