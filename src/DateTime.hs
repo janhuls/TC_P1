@@ -2,6 +2,7 @@ module DateTime where
 
 import ParseLib.Derived
 
+
 -- | "Target" datatype for the DateTime parser, i.e, the parser should produce elements of this type.
 data DateTime = DateTime
   { date :: Date,
@@ -128,16 +129,43 @@ parsePrint s = fmap printDateTime (run parseDateTime s)
 
 -- Exercise 5
 checkDateTime :: DateTime -> Bool
-checkDateTime (DateTime {date = d, time = t}) = checkDate d && checkTime t
+checkDateTime (DateTime d t _) = checkDate d && checkTime t
 
 checkDate :: Date -> Bool
-checkDate = undefined
+checkDate (Date (Year y) (Month m) (Day d)) =
+  let yr = getIntFromInt4Digits y
+      mo = getIntFromInt2Digits m
+      da = getIntFromInt2Digits d
+  in inRange mo 1 12 &&
+     inRange da 1 (daysInMonth yr mo)
 
-checkTime :: Time -> Bool 
-checkTime (Time {hour = hour, minute = minute, second = second}) = 
-  let hr = getIntFromInt2Digits $ runHour hour
-      min = getIntFromInt2Digits $ runMinute minute
-      sec = getIntFromInt2Digits $ runSecond second in
+daysInMonth :: Int -> Int -> Int
+daysInMonth y m =
+  case m of
+    1  -> 31
+    2  -> if isLeapYear y then 29 else 28
+    3  -> 31
+    4  -> 30
+    5  -> 31
+    6  -> 30
+    7  -> 31
+    8  -> 31
+    9  -> 30
+    10 -> 31
+    11 -> 30
+    12 -> 31
+    _  -> 0
+
+isLeapYear :: Int -> Bool
+isLeapYear y =
+  (y `mod` 400 == 0) ||
+  (y `mod` 4 == 0 && y `mod` 100 /= 0)
+
+checkTime :: Time -> Bool
+checkTime (Time (Hour hour) (Minute minute) (Second second)) =
+  let hr = getIntFromInt2Digits hour
+      min = getIntFromInt2Digits minute
+      sec = getIntFromInt2Digits second in
         inRange hr 0 23 &&
         inRange min 0 59 &&
         inRange sec 0 59
