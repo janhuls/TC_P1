@@ -112,23 +112,34 @@ parseEventEnd :: Parser Token ()
 parseEventEnd = symbol (Token "END" "VEVENT") *> epsilon
 
 parseEventParts :: Parser Token Event
-parseEventParts = undefined
+parseEventParts = Event
+  <$> parseDTStamp
+  <*> parseUID
+  <*> parseDTStart
+  <*> parseDTEnd
+  <*> parseDescr
+  <*> parseSummary
+  <*> parseLocation
 
-parseEventPart :: String -> Parser Token a
-parseEventPart s = case s of 
-  "UID"         -> UID <$> parseText
-  "DTSTAMP"     -> DTStamp <$> parseDateTime'
-  "DTSTART"     -> DTStart <$> parseDateTime'
-  "DTEND"       -> DTEnd <$> parseDateTime'
-  "SUMMARY"     -> Summ <$> parseText
-  "DESCRIPTION" -> Descr <$> parseText
-  "LOCATION"    -> Loc <$> parseText
+-- parseEventPart :: String -> Parser Token a    dit geeft error omdat types niet matchen, ghci zelf laten inferren geeft ook error
+parseUID       = UID     <$> parseText
+parseDTStamp   = DTStamp <$> parseDateTime'
+parseDTStart   = DTStart <$> parseDateTime'
+parseDTEnd     = DTEnd   <$> parseDateTime'
+parseSummary   = Summ    <$> parseText
+parseDescr     = Descr   <$> parseText
+parseLocation  = Loc     <$> parseText
 
-parseDateTime' :: Parser Token DateTime
-parseDateTime' = undefined
 
-parseText :: Parser Token String
-parseText = undefined
+parseDateTime' :: Parser Token DateTime --pak token en return DateTime value
+parseDateTime' = do
+  tok <- satisfy (const True)
+  case run parseDateTime (getVal tok) of
+    Just dt -> pure dt
+    Nothing -> failp
+
+parseText :: Parser Token String --pak token en return text value
+parseText = getVal <$> satisfy (const True)
 
 satisfyKey :: String -> Parser Token Token
 satisfyKey s = satisfy (\t -> getKey t == s)
