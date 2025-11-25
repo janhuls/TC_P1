@@ -153,5 +153,31 @@ parseCalendar' :: String -> Maybe Calendar
 parseCalendar' s = run lexCalendar s >>= run parseCalendar
 
 -- Exercise 8
+
+maxLine :: Int -- max lengte lijn
+maxLine = 75 --(?) idk wat de max lengte is maar aanpasbaar iig
+
+splitOnChar :: Char -> String -> [String] -- splitten op char, handig voor tokenlines builden later
+splitOnChar _ "" = [""]
+splitOnChar c s =
+  case break (== c) s of
+    (x, [])     -> [x]
+    (x, _:rest) -> x : splitOnChar c rest
+
+splitInto :: Int -> String -> [String] -- splitten naar delen van n tekens
+splitInto _ "" = []
+splitInto n s  = take n s : splitInto n (drop n s)
+
+-- lijnen bouwen voor eerste deel dat na KEY: volgt
+buildFirstChunkLines :: String -> String -> [String]
+buildFirstChunkLines key chunk = --waar key is summary of description etc en chunk is t deel dat daarmee volgt
+  let prefix = key ++ ":"
+      charsleft  = maxLine - length prefix
+      (firstPart, rest) = splitAt (max 0 charsleft) chunk
+      firstLine = prefix ++ firstPart
+      restPieces = splitInto (maxLine - 1) rest
+  in firstLine : map (" " ++) restPieces
+
+
 printCalendar :: Calendar -> String
 printCalendar = undefined
