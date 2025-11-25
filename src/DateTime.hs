@@ -158,8 +158,7 @@ daysInMonth y m =
 
 isLeapYear :: Int -> Bool
 isLeapYear y =
-  (y `mod` 400 == 0) ||
-  (y `mod` 4 == 0 && y `mod` 100 /= 0)
+  (y `mod` 400 == 0) || (y `mod` 4 == 0 && y `mod` 100 /= 0)
 
 checkTime :: Time -> Bool
 checkTime (Time (Hour hour) (Minute minute) (Second second)) =
