@@ -31,7 +31,7 @@ data Event = Event
     summary :: Maybe Summary,
     location :: Maybe Location
   }
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Ord)
 
 newtype DTStamp = DTStamp DateTime deriving (Eq, Ord, Show, Generic)
 instance CustomData DTStamp
@@ -47,6 +47,15 @@ newtype Summary = Summ String deriving (Eq, Ord, Show, Generic)
 instance CustomData Summary
 newtype Location = Loc String deriving (Eq, Ord, Show, Generic)
 instance CustomData Location
+
+getDescription :: Description -> String
+getDescription (Descr a) = a
+
+getSummary :: Summary -> String
+getSummary (Summ s) = s
+
+getLocation :: Location -> String
+getLocation (Loc p) = p
 
 -- If you plan on using your own types in Calendar, Event, or Token. Make sure it derives Eq, Generic, and CustomData.
 -- Example:
@@ -198,6 +207,30 @@ buildFirstChunkLines key chunk = --waar key is summary of description etc en chu
       restPieces = splitInto (maxLine - 1) rest
   in firstLine : map (" " ++) restPieces
 
+crlf = "\r\n"
 
-printCalendar :: Calendar -> String
-printCalendar = undefined
+instance Show Event where
+  show (Event ds u dst de d s l) = "DTSTAMP:" ++ show ds ++ crlf ++
+                                   "UID:" ++ show u ++ crlf ++
+                                   "DTSTART:" ++ show dst ++ crlf ++ 
+                                   "DTEND:" ++ show de ++ crlf ++
+                                   case d of 
+                                    Nothing -> ""
+                                    (Just jd) -> concatMap (++ crlf) (buildFirstChunkLines "DESCRIPTION" (getDescription jd)) 
+                                    ++
+                                   case s of 
+                                    Nothing -> ""
+                                    (Just js) -> concatMap (++ crlf) (buildFirstChunkLines "SUMMARY" (getSummary js)) 
+                                    ++
+                                   case l of 
+                                    Nothing -> ""
+                                    (Just jl) -> concatMap (++ crlf) (buildFirstChunkLines "LOCATION" (getLocation jl)) 
+
+
+printCalendar :: Calendar -> String                     
+printCalendar (Calendar (Header (Prodid prodidString) (Version versionString)) events) = 
+  "BEGIN:VCALENDAR" ++ crlf ++
+  "VERSION:" ++ versionString ++ crlf ++
+  "PRODID" ++ prodidString ++ crlf ++
+  concatMap (\e -> "BEGIN:VEVENT" ++ crlf ++ show e ++ crlf ++ "END:VEVENT" ++ crlf) events ++
+  "END:VCALENDAR"
