@@ -25,8 +25,8 @@ prettyShow (Valid x)   = "valid date: " ++ printDateTime x
 main :: IO ()
 main = do
   disableNewlineTranslations
-  mainDateTime  -- Invert comments to test other parser
-  -- mainCalendar
+  --mainDateTime  -- Invert comments to test other parser
+  mainCalendar
 
 mainDateTime :: IO ()
 mainDateTime = interact (printOutput . processCheck . processInput)

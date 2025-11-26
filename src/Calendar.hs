@@ -27,9 +27,9 @@ data Event = Event
     uid :: UID,
     dtStart :: DTStart,
     dtEnd :: DTEnd,
-    description :: Description,
-    summary :: Summary,
-    location :: Location
+    description :: Maybe Description,
+    summary :: Maybe Summary,
+    location :: Maybe Location
   }
   deriving (Eq, Ord, Show)
 
@@ -111,17 +111,38 @@ parseEventStart = symbol (Token "BEGIN" "VEVENT") *> epsilon
 parseEventEnd :: Parser Token ()
 parseEventEnd = symbol (Token "END" "VEVENT") *> epsilon
 
-parseEventParts :: Parser Token Event
-parseEventParts = Event
-  <$> parseDTStamp
-  <*> parseUID
-  <*> parseDTStart
-  <*> parseDTEnd
-  <*> parseDescr
-  <*> parseSummary
-  <*> parseLocation
+data EventParts = EventParts
+  { epDtStamp    :: Maybe DTStamp
+  , epUid        :: Maybe UID
+  , epDtStart    :: Maybe DTStart
+  , epDtEnd      :: Maybe DTEnd
+  , epDescription :: Maybe Description
+  , epSummary    :: Maybe Summary
+  , epLocation   :: Maybe Location
+  }
 
--- parseEventPart :: String -> Parser Token a    dit geeft error omdat types niet matchen, ghci zelf laten inferren geeft ook error
+emptyParts :: EventParts
+emptyParts = EventParts Nothing Nothing Nothing Nothing Nothing Nothing Nothing
+
+parseEventPart :: Parser Token (EventParts -> EventParts)
+parseEventPart = choice 
+    [(\x p -> p { epUid = Just x })        <$> parseUID,
+    (\x p -> p { epDtStamp = Just x })    <$> parseDTStamp,
+    (\x p -> p { epDtStart = Just x })    <$> parseDTStart,
+    (\x p -> p { epDtEnd = Just x })      <$> parseDTEnd,
+    (\x p -> p { epSummary = Just x })    <$> parseSummary,
+    (\x p -> p { epDescription = Just x })<$> parseDescr,
+    (\x p -> p { epLocation = Just x })   <$> parseLocation]
+
+parseEventParts :: Parser Token Event
+parseEventParts = do
+  updaters <- many parseEventPart
+  let parts = foldl (flip ($)) emptyParts updaters
+  case parts of
+    EventParts (Just ds) (Just u) (Just st) (Just en) d s l ->
+      pure (Event ds u st en d s l)
+    _ -> failp  -- niet compleet
+
 parseUID       = UID     <$> parseText
 parseDTStamp   = DTStamp <$> parseDateTime'
 parseDTStart   = DTStart <$> parseDateTime'
@@ -129,7 +150,6 @@ parseDTEnd     = DTEnd   <$> parseDateTime'
 parseSummary   = Summ    <$> parseText
 parseDescr     = Descr   <$> parseText
 parseLocation  = Loc     <$> parseText
-
 
 parseDateTime' :: Parser Token DateTime --pak token en return DateTime value
 parseDateTime' = do
@@ -147,7 +167,7 @@ satisfyKey s = satisfy (\t -> getKey t == s)
 --choice operator as in ParseLib.core 
 (<|>) :: Parser s a -> Parser s a -> Parser s a
 p <|> q = choice $ p : [q]
-
+infixr 3 <|>
 
 parseCalendar' :: String -> Maybe Calendar
 parseCalendar' s = run lexCalendar s >>= run parseCalendar
@@ -155,7 +175,7 @@ parseCalendar' s = run lexCalendar s >>= run parseCalendar
 -- Exercise 8
 
 maxLine :: Int -- max lengte lijn
-maxLine = 75 --(?) idk wat de max lengte is maar aanpasbaar iig
+maxLine = 42 --(?) idk wat de max lengte is maar aanpasbaar iig
 
 splitOnChar :: Char -> String -> [String] -- splitten op char, handig voor tokenlines builden later
 splitOnChar _ "" = [""]
