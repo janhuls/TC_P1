@@ -66,8 +66,8 @@ parseHour = Hour <$> parse2Digits
 parseMinute :: Parser Char Minute
 parseMinute = fmap Minute parse2Digits
 
-parseSecond :: Parser Char Second
-parseSecond = Second <$> parse2Digits
+parseSecond :: Parser Char Second --laat tijd toe zonder s, dan default naar 00
+parseSecond = option (Second <$> parse2Digits) (Second (Int2Digits 0))
 
 
 parseutc :: Parser Char Bool

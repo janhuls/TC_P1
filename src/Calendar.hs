@@ -78,18 +78,18 @@ lexLine :: Parser Char Token
 lexLine = Token <$> keyParser <* symbol ':' <*> valueParser <* crlfParser
 
 crlfParser :: Parser Char ()
-crlfParser = token "\r\n" *> epsilon
+crlfParser = (token "\r\n" <|> token "\n") *> epsilon
 
 keyParser :: Parser Char String
 keyParser = many1 (satisfy (/= ':'))
 
 valueParser :: Parser Char String
 valueParser = (++) <$> firstLine <*> restLines where
-  firstLine = many (satisfy (/= '\r'))
+  firstLine = many (satisfy (\c -> c /= '\r' && c /= '\n'))
   restLines = concat <$> many
             (   crlfParser
              *> symbol ' '
-             *> ((++) "\n" <$> many (satisfy (/= '\r')))
+             *> ((++) "\n" <$> many (satisfy (\c -> c /= '\r' && c /= '\n')))
             )
 
 parseCalendar :: Parser Token Calendar
@@ -145,7 +145,7 @@ parseEventPart = choice
 parseEventParts :: Parser Token Event
 parseEventParts = do
   updaters <- many parseEventPart
-  let parts = foldl (flip ($)) emptyParts updaters
+  let parts = foldl (\acc f -> f acc) emptyParts updaters
   case parts of
     EventParts (Just ds) (Just u) (Just st) (Just en) d s l ->
       pure (Event ds u st en d s l)
