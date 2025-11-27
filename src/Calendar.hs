@@ -1,5 +1,4 @@
 {-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 module Calendar where
 
@@ -184,7 +183,7 @@ parseCalendar' s = run lexCalendar s >>= run parseCalendar
 -- Exercise 8
 
 maxLine :: Int -- max lengte lijn
-maxLine = 42 --(?) idk wat de max lengte is maar aanpasbaar iig
+maxLine = 75 --(?) idk wat de max lengte is maar aanpasbaar iig vgm 75
 
 splitOnChar :: Char -> String -> [String] -- splitten op char, handig voor tokenlines builden later
 splitOnChar _ "" = [""]
@@ -212,7 +211,7 @@ crlf = "\r\n"
 instance Show Event where
   show (Event (DTStamp ds) (UID u) (DTStart dst) (DTEnd de) d s l) = 
     "DTSTAMP:" ++ printDateTime ds ++ crlf ++
-    "UID:" ++ show u ++ crlf ++
+    "UID:" ++ u ++ crlf ++ -- moet u zijn ipv show u want anders krijg je quotes
     "DTSTART:" ++ printDateTime dst ++ crlf ++ 
     "DTEND:" ++ printDateTime de ++ crlf ++
     case d of 
