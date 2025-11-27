@@ -151,23 +151,37 @@ parseEventParts = do
       pure (Event ds u st en d s l)
     _ -> failp  -- niet compleet
 
-parseUID       = UID     <$> parseText
-parseDTStamp   = DTStamp <$> parseDateTime'
-parseDTStart   = DTStart <$> parseDateTime'
-parseDTEnd     = DTEnd   <$> parseDateTime'
-parseSummary   = Summ    <$> parseText
-parseDescr     = Descr   <$> parseText
-parseLocation  = Loc     <$> parseText
-
-parseDateTime' :: Parser Token DateTime --pak token en return DateTime value
-parseDateTime' = do
-  tok <- satisfy (const True)
-  case run parseDateTime (getVal tok) of
-    Just dt -> pure dt
+parseUID       = UID . getVal <$> satisfyKey "UID"
+parseDTStamp = do
+  token <- satisfyKey "DTSTAMP"
+  case run parseDateTime (getVal token) of
+    Just dt -> pure (DTStamp dt)
     Nothing -> failp
+parseDTStart :: Parser Token DTStart
+parseDTStart = do
+  token <- satisfyKey "DTSTART"
+  case run parseDateTime (getVal token) of
+    Just dt -> pure (DTStart dt)
+    Nothing -> failp
+parseDTEnd :: Parser Token DTEnd
+parseDTEnd = do
+  token <- satisfyKey "DTEND"
+  case run parseDateTime (getVal token) of
+    Just dt -> pure (DTEnd dt)
+    Nothing -> failp
+parseSummary   = Summ . getVal <$> satisfyKey "SUMMARY"
+parseDescr     = Descr . getVal <$> satisfyKey "DESCRIPTION"
+parseLocation  = Loc . getVal <$> satisfyKey "LOCATION"
 
-parseText :: Parser Token String --pak token en return text value
-parseText = getVal <$> satisfy (const True)
+--parseDateTime' :: Parser Token DateTime --pak token en return DateTime value
+--parseDateTime' = do
+--  tok <- satisfy (const True)
+--  case run parseDateTime (getVal tok) of
+ --   Just dt -> pure dt
+ --   Nothing -> failp
+
+--parseText :: Parser Token String --pak token en return text value
+--parseText = getVal <$> satisfy (const True)
 
 satisfyKey :: String -> Parser Token Token
 satisfyKey s = satisfy (\t -> getKey t == s)
