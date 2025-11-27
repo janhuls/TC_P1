@@ -13,7 +13,7 @@ data Calendar = Calendar
   { header :: Header,
     events :: [Event]
   }
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Ord)
 
 data Header = Header Prodid Version deriving (Eq, Ord, Show, Generic)
 instance CustomData Header
@@ -33,19 +33,19 @@ data Event = Event
   }
   deriving (Eq, Ord)
 
-newtype DTStamp = DTStamp DateTime deriving (Eq, Ord, Show, Generic)
+newtype DTStamp = DTStamp DateTime deriving (Eq, Ord, Generic)
 instance CustomData DTStamp
-newtype DTStart = DTStart DateTime deriving (Eq, Ord, Show, Generic)
+newtype DTStart = DTStart DateTime deriving (Eq, Ord, Generic)
 instance CustomData DTStart
-newtype DTEnd = DTEnd DateTime deriving (Eq, Ord, Show, Generic)
+newtype DTEnd = DTEnd DateTime deriving (Eq, Ord, Generic)
 instance CustomData DTEnd
 newtype UID = UID String deriving (Eq, Ord, Show, Generic)
 instance CustomData UID
-newtype Description = Descr String deriving (Eq, Ord, Show, Generic)
+newtype Description = Descr String deriving (Eq, Ord, Generic)
 instance CustomData Description
-newtype Summary = Summ String deriving (Eq, Ord, Show, Generic)
+newtype Summary = Summ String deriving (Eq, Ord, Generic)
 instance CustomData Summary
-newtype Location = Loc String deriving (Eq, Ord, Show, Generic)
+newtype Location = Loc String deriving (Eq, Ord, Generic)
 instance CustomData Location
 
 getDescription :: Description -> String
@@ -135,7 +135,7 @@ emptyParts = EventParts Nothing Nothing Nothing Nothing Nothing Nothing Nothing
 
 parseEventPart :: Parser Token (EventParts -> EventParts)
 parseEventPart = choice 
-    [(\x p -> p { epUid = Just x })        <$> parseUID,
+    [(\x p -> p { epUid = Just x })       <$> parseUID,
     (\x p -> p { epDtStamp = Just x })    <$> parseDTStamp,
     (\x p -> p { epDtStart = Just x })    <$> parseDTStart,
     (\x p -> p { epDtEnd = Just x })      <$> parseDTEnd,
@@ -210,27 +210,30 @@ buildFirstChunkLines key chunk = --waar key is summary of description etc en chu
 crlf = "\r\n"
 
 instance Show Event where
-  show (Event ds u dst de d s l) = "DTSTAMP:" ++ show ds ++ crlf ++
-                                   "UID:" ++ show u ++ crlf ++
-                                   "DTSTART:" ++ show dst ++ crlf ++ 
-                                   "DTEND:" ++ show de ++ crlf ++
-                                   case d of 
-                                    Nothing -> ""
-                                    (Just jd) -> concatMap (++ crlf) (buildFirstChunkLines "DESCRIPTION" (getDescription jd)) 
-                                    ++
-                                   case s of 
-                                    Nothing -> ""
-                                    (Just js) -> concatMap (++ crlf) (buildFirstChunkLines "SUMMARY" (getSummary js)) 
-                                    ++
-                                   case l of 
-                                    Nothing -> ""
-                                    (Just jl) -> concatMap (++ crlf) (buildFirstChunkLines "LOCATION" (getLocation jl)) 
+  show (Event (DTStamp ds) (UID u) (DTStart dst) (DTEnd de) d s l) = 
+    "DTSTAMP:" ++ printDateTime ds ++ crlf ++
+    "UID:" ++ show u ++ crlf ++
+    "DTSTART:" ++ printDateTime dst ++ crlf ++ 
+    "DTEND:" ++ printDateTime de ++ crlf ++
+    case d of 
+     Nothing -> ""
+     (Just jd) -> concatMap (++ crlf) (buildFirstChunkLines "DESCRIPTION" (getDescription jd)) 
+     ++
+    case s of 
+     Nothing -> ""
+     (Just js) -> concatMap (++ crlf) (buildFirstChunkLines "SUMMARY" (getSummary js)) 
+     ++
+    case l of 
+     Nothing -> ""
+     (Just jl) -> concatMap (++ crlf) (buildFirstChunkLines "LOCATION" (getLocation jl)) 
 
+instance Show Calendar where
+  show = printCalendar
 
 printCalendar :: Calendar -> String                     
 printCalendar (Calendar (Header (Prodid prodidString) (Version versionString)) events) = 
   "BEGIN:VCALENDAR" ++ crlf ++
   "VERSION:" ++ versionString ++ crlf ++
-  "PRODID" ++ prodidString ++ crlf ++
+  "PRODID:" ++ prodidString ++ crlf ++
   concatMap (\e -> "BEGIN:VEVENT" ++ crlf ++ show e ++ crlf ++ "END:VEVENT" ++ crlf) events ++
   "END:VCALENDAR"

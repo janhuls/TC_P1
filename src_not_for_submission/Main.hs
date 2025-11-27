@@ -13,6 +13,7 @@ import Calendar
 import Features
 import System.Environment
 import System.IO
+import Data.Maybe (fromJust)
 
 
 data Result = SyntaxError | Invalid DateTime | Valid DateTime deriving (Eq, Ord)
@@ -36,7 +37,7 @@ mainDateTime = interact (printOutput . processCheck . processInput)
     printOutput  = unlines . map prettyShow
 
 mainCalendar :: IO ()
-mainCalendar = interact (show . parseCalendar')
+mainCalendar = readFile "examples/newyear.ics" >>= (putStr . show . fromJust . parseCalendar')
 
 readCalendar :: FilePath -> IO (Maybe Calendar)
 readCalendar path = do

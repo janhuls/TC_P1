@@ -9,7 +9,10 @@ data DateTime = DateTime
     time :: Time,
     utc :: Bool
   }
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Ord)
+
+instance Show DateTime where
+  show = printDateTime
 
 data Date = Date
   { year :: Year,
