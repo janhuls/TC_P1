@@ -219,30 +219,37 @@ crlf :: String
 crlf = "\r\n"
 
 instance Show Event where
-  show (Event (DTStamp ds) (UID u) (DTStart dst) (DTEnd de) d s l) = 
-    "DTSTAMP:" ++ printDateTime ds ++ crlf ++
-    "UID:" ++ u ++ crlf ++ -- moet u zijn ipv show u want anders krijg je quotes
-    "DTSTART:" ++ printDateTime dst ++ crlf ++ 
-    "DTEND:" ++ printDateTime de ++ crlf ++
-    case d of 
-     Nothing -> ""
-     (Just jd) -> concatMap (++ crlf) (buildFirstChunkLines "DESCRIPTION" (getDescription jd)) 
-     ++
-    case s of 
-     Nothing -> ""
-     (Just js) -> concatMap (++ crlf) (buildFirstChunkLines "SUMMARY" (getSummary js)) 
-     ++
-    case l of 
-     Nothing -> ""
-     (Just jl) -> concatMap (++ crlf) (buildFirstChunkLines "LOCATION" (getLocation jl)) 
+  show (Event (DTStamp ds) (UID u) (DTStart dst) (DTEnd de) d s l) =
+    let baseLines =
+          [ "DTSTAMP:" ++ printDateTime ds
+          , "UID:" ++ u
+          , "DTSTART:" ++ printDateTime dst
+          , "DTEND:" ++ printDateTime de
+          ]
+        descrLines = case d of
+          Nothing -> []
+          Just jd -> buildFirstChunkLines "DESCRIPTION" (getDescription jd)
+        summaryLines = case s of
+          Nothing -> []
+          Just js -> buildFirstChunkLines "SUMMARY" (getSummary js)
+        locLines = case l of
+          Nothing -> []
+          Just jl -> buildFirstChunkLines "LOCATION" (getLocation jl)
+        allLines = baseLines ++ descrLines ++ summaryLines ++ locLines
+    in unlinesCRLF allLines
+
+-- helper: lijnen joine met crlf en geen extra blanke lijn
+unlinesCRLF :: [String] -> String
+unlinesCRLF = foldr (\ln acc -> ln ++ crlf ++ acc) ""
+
 
 instance Show Calendar where
   show = printCalendar
 
-printCalendar :: Calendar -> String                     
-printCalendar (Calendar (Header (Prodid prodidString) (Version versionString)) events) = 
-  "BEGIN:VCALENDAR" ++ crlf ++
-  "VERSION:" ++ versionString ++ crlf ++
-  "PRODID:" ++ prodidString ++ crlf ++
-  concatMap (\e -> "BEGIN:VEVENT" ++ crlf ++ show e ++ crlf ++ "END:VEVENT" ++ crlf) events ++
-  "END:VCALENDAR"
+printCalendar :: Calendar -> String
+printCalendar (Calendar (Header (Prodid prodidString) (Version versionString)) events) =
+  let headerLines = ["BEGIN:VCALENDAR", "VERSION:" ++ versionString, "PRODID:" ++ prodidString]
+      eventText e = "BEGIN:VEVENT" ++ crlf ++ show e ++ "END:VEVENT"
+      body = concatMap (\e -> eventText e ++ crlf) events
+  in concatMap (++ crlf) headerLines ++ body ++ "END:VCALENDAR" ++ crlf
+
