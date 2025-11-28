@@ -9,7 +9,7 @@ data DateTime = DateTime
     time :: Time,
     utc :: Bool
   }
-  deriving (Eq, Ord)
+  deriving (Eq)
 
 instance Show DateTime where
   show = printDateTime
@@ -19,7 +19,7 @@ data Date = Date
     month :: Month,
     day :: Day
   }
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Show)
 
 newtype Year = Year {runYear :: Int4Digits} deriving (Eq, Ord, Show)
 
@@ -32,13 +32,25 @@ data Time = Time
     minute :: Minute,
     second :: Second
   }
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Show)
 
 newtype Hour = Hour {runHour :: Int2Digits} deriving (Eq, Ord, Show)
 
 newtype Minute = Minute {runMinute :: Int2Digits} deriving (Eq, Ord, Show)
 
 newtype Second = Second {runSecond :: Int2Digits} deriving (Eq, Ord, Show)
+
+instance Ord Date where
+  compare (Date y1 m1 d1) (Date y2 m2 d2) =
+    compare y1 y2 <> compare m1 m2 <> compare d1 d2
+
+instance Ord Time where
+  compare (Time h1 m1 s1) (Time h2 m2 s2) =
+    compare h1 h2 <> compare m1 m2 <> compare s1 s2
+
+instance Ord DateTime where
+  compare (DateTime date1 time1 _) (DateTime date2 time2 _) =
+    compare date1 date2 <> compare time1 time2
 
 -- Exercise 1
 parseDateTime :: Parser Char DateTime

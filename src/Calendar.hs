@@ -89,7 +89,7 @@ valueParser = (++) <$> firstLine <*> restLines where
   restLines = concat <$> many
             (   crlfParser
              *> symbol ' '
-             *> ((++) "\n" <$> many (satisfy (\c -> c /= '\r' && c /= '\n')))
+             *> ((++) "\n" <$> many1 (satisfy (\c -> c /= '\r' && c /= '\n')))
             )
 
 parseCalendar :: Parser Token Calendar
@@ -151,7 +151,9 @@ parseEventParts = do
       pure (Event ds u st en d s l)
     _ -> failp  -- niet compleet
 
+parseUID :: Parser Token UID
 parseUID       = UID . getVal <$> satisfyKey "UID"
+parseDTStamp :: Parser Token DTStamp
 parseDTStamp = do
   token <- satisfyKey "DTSTAMP"
   case run parseDateTime (getVal token) of
@@ -169,19 +171,12 @@ parseDTEnd = do
   case run parseDateTime (getVal token) of
     Just dt -> pure (DTEnd dt)
     Nothing -> failp
+parseSummary :: Parser Token Summary
 parseSummary   = Summ . getVal <$> satisfyKey "SUMMARY"
+parseDescr :: Parser Token Description
 parseDescr     = Descr . getVal <$> satisfyKey "DESCRIPTION"
+parseLocation :: Parser Token Location
 parseLocation  = Loc . getVal <$> satisfyKey "LOCATION"
-
---parseDateTime' :: Parser Token DateTime --pak token en return DateTime value
---parseDateTime' = do
---  tok <- satisfy (const True)
---  case run parseDateTime (getVal tok) of
- --   Just dt -> pure dt
- --   Nothing -> failp
-
---parseText :: Parser Token String --pak token en return text value
---parseText = getVal <$> satisfy (const True)
 
 satisfyKey :: String -> Parser Token Token
 satisfyKey s = satisfy (\t -> getKey t == s)
@@ -197,7 +192,7 @@ parseCalendar' s = run lexCalendar s >>= run parseCalendar
 -- Exercise 8
 
 maxLine :: Int -- max lengte lijn
-maxLine = 75 --(?) idk wat de max lengte is maar aanpasbaar iig vgm 75
+maxLine = 42 --(?) idk wat de max lengte is maar aanpasbaar iig vgm 75
 
 splitOnChar :: Char -> String -> [String] -- splitten op char, handig voor tokenlines builden later
 splitOnChar _ "" = [""]
@@ -220,6 +215,7 @@ buildFirstChunkLines key chunk = --waar key is summary of description etc en chu
       restPieces = splitInto (maxLine - 1) rest
   in firstLine : map (" " ++) restPieces
 
+crlf :: String
 crlf = "\r\n"
 
 instance Show Event where
