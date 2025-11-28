@@ -89,7 +89,7 @@ valueParser = (++) <$> firstLine <*> restLines where
   restLines = concat <$> many
             (   crlfParser
              *> symbol ' '
-             *> ((++) "\n" <$> many1 (satisfy (\c -> c /= '\r' && c /= '\n')))
+             *> many (satisfy (\c -> c /= '\r' && c /= '\n'))
             )
 
 parseCalendar :: Parser Token Calendar
