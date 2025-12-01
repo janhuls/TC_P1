@@ -58,19 +58,15 @@ months y =
     feb = if isLeapYear y then 29 else 28
 
 dateToDays :: Date -> Int
-dateToDays (Date (Year y) (Month m) (Day d)) =
+dateToDays (Date (Year yr) (Month mo) (Day da)) =
     yearDays yr + monthDays yr mo + da
-  where
-    yr = getIntFromInt4Digits y
-    mo = getIntFromInt2Digits m
-    da = getIntFromInt2Digits d
 
 timeToMinutes :: Time -> Int
 timeToMinutes (Time hr min sec) =
   h * 60 + m + s `div` 60 where
-    h = getIntFromInt2Digits $ runHour hr
-    m = getIntFromInt2Digits $ runMinute min
-    s = getIntFromInt2Digits $ runSecond sec
+    h = runHour hr
+    m = runMinute min
+    s = runSecond sec
 
 dateTimeToMinutes :: DateTime -> Int
 dateTimeToMinutes (DateTime d t _) =

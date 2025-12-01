@@ -1,6 +1,7 @@
 module DateTime where
 
 import ParseLib.Derived
+import Text.Read (Lexeme(String))
 
 
 -- | "Target" datatype for the DateTime parser, i.e, the parser should produce elements of this type.
@@ -21,11 +22,11 @@ data Date = Date
   }
   deriving (Eq, Show)
 
-newtype Year = Year {runYear :: Int4Digits} deriving (Eq, Ord, Show)
+newtype Year = Year {runYear :: Int} deriving (Eq, Ord, Show)
 
-newtype Month = Month {runMonth :: Int2Digits} deriving (Eq, Ord, Show)
+newtype Month = Month {runMonth :: Int} deriving (Eq, Ord, Show)
 
-newtype Day = Day {runDay :: Int2Digits} deriving (Eq, Ord, Show)
+newtype Day = Day {runDay :: Int} deriving (Eq, Ord, Show)
 
 data Time = Time
   { hour :: Hour,
@@ -34,11 +35,11 @@ data Time = Time
   }
   deriving (Eq, Show)
 
-newtype Hour = Hour {runHour :: Int2Digits} deriving (Eq, Ord, Show)
+newtype Hour = Hour {runHour :: Int} deriving (Eq, Ord, Show)
 
-newtype Minute = Minute {runMinute :: Int2Digits} deriving (Eq, Ord, Show)
+newtype Minute = Minute {runMinute :: Int} deriving (Eq, Ord, Show)
 
-newtype Second = Second {runSecond :: Int2Digits} deriving (Eq, Ord, Show)
+newtype Second = Second {runSecond :: Int} deriving (Eq, Ord, Show)
 
 instance Ord Date where
   compare (Date y1 m1 d1) (Date y2 m2 d2) =
@@ -78,25 +79,25 @@ parseHour = Hour <$> parse2Digits
 parseMinute :: Parser Char Minute
 parseMinute = fmap Minute parse2Digits
 
-parseSecond :: Parser Char Second --laat tijd toe zonder s, dan default naar 00
-parseSecond = option (Second <$> parse2Digits) (Second (Int2Digits 0))
+parseSecond :: Parser Char Second 
+parseSecond = Second <$> parse2Digits
 
 
 parseutc :: Parser Char Bool
 parseutc = True <$ symbol 'Z' <<|> (False <$ epsilon)
 
 
-parse2Digits :: Parser Char Int2Digits
+parse2Digits :: Parser Char Int
 parse2Digits = collapse2Digits <$> newdigit <*> newdigit
 
-collapse2Digits :: Int -> Int -> Int2Digits
-collapse2Digits a b = Int2Digits $ a * 10 + b
+collapse2Digits :: Int -> Int -> Int
+collapse2Digits a b = a * 10 + b
 
-parse4Digits :: Parser Char Int4Digits
+parse4Digits :: Parser Char Int
 parse4Digits = collapse4Digits <$> newdigit <*> newdigit <*> newdigit <*> newdigit
 
-collapse4Digits :: Int -> Int -> Int -> Int -> Int4Digits
-collapse4Digits a b c d = Int4Digits $ 1000 * a + 100 * b + 10 * c + d
+collapse4Digits :: Int -> Int -> Int -> Int -> Int
+collapse4Digits a b c d = 1000 * a + 100 * b + 10 * c + d
 
 
 -- Exercise 2
@@ -114,42 +115,25 @@ print2 :: Int -> String
 print2 n = let s = show n in if length s == 1 then '0' : s else s
 
 print4 :: Int -> String
-print4 n =
-  let s = show n
-      pad = replicate (4 - length s) '0'
-  in pad ++ s
+print4 i 
+  | i < 10 = '0' : '0' : '0' : show i
+  | i < 100 = '0' : '0' : show i
+  | i < 1000 = '0' : show i
+  | otherwise = show i
 
 
 printDateTime :: DateTime -> String
 printDateTime (DateTime {date = Date {year = Year yr, month = Month mo, day = Day d},
                          time = Time {hour = Hour hr, minute = Minute min, second = Second sec},
                          utc = u}) = 
-                          print4 (getIntFromInt4Digits yr) ++
-                          print2 (getIntFromInt2Digits mo) ++
-                          print2 (getIntFromInt2Digits d) ++
+                          print4 yr ++
+                          print2 mo ++
+                          print2 d ++
                           "T" ++
-                          print2 (getIntFromInt2Digits hr) ++
-                          print2 (getIntFromInt2Digits min) ++
-                          print2 (getIntFromInt2Digits sec) ++
+                          print2 hr ++
+                          print2 min ++
+                          print2 sec ++
                           if u then "Z" else ""
-
-newtype Int2Digits = Int2Digits Int deriving (Eq, Ord)
-newtype Int4Digits = Int4Digits Int deriving (Eq, Ord)
-
-getIntFromInt2Digits :: Int2Digits -> Int
-getIntFromInt2Digits (Int2Digits i) = i
-getIntFromInt4Digits :: Int4Digits -> Int
-getIntFromInt4Digits (Int4Digits i) = i
-
-instance Show Int2Digits where
-  show (Int2Digits i) = if i < 10 then '0' : show i else show i
-
-instance Show Int4Digits where
-  show (Int4Digits i)
-    | i < 10 = '0' : '0' : '0' : show i
-    | i < 100 = '0' : '0' : show i
-    | i < 1000 = '0' : show i
-    | otherwise = show i
 
 -- Exercise 4
 parsePrint :: [Char] -> Maybe String
@@ -160,12 +144,9 @@ checkDateTime :: DateTime -> Bool
 checkDateTime (DateTime d t _) = checkDate d && checkTime t
 
 checkDate :: Date -> Bool
-checkDate (Date (Year y) (Month m) (Day d)) =
-  let yr = getIntFromInt4Digits y
-      mo = getIntFromInt2Digits m
-      da = getIntFromInt2Digits d
-  in inRange mo 1 12 &&
-     inRange da 1 (daysInMonth yr mo)
+checkDate (Date (Year yr) (Month mo) (Day da)) =
+  inRange mo 1 12 &&
+  inRange da 1 (daysInMonth yr mo)
 
 daysInMonth :: Int -> Int -> Int
 daysInMonth y m =
@@ -189,13 +170,10 @@ isLeapYear y =
   (y `mod` 400 == 0) || (y `mod` 4 == 0 && y `mod` 100 /= 0)
 
 checkTime :: Time -> Bool
-checkTime (Time (Hour hour) (Minute minute) (Second second)) =
-  let hr = getIntFromInt2Digits hour
-      min = getIntFromInt2Digits minute
-      sec = getIntFromInt2Digits second in
-        inRange hr 0 23 &&
-        inRange min 0 59 &&
-        inRange sec 0 59
+checkTime (Time (Hour hr) (Minute min) (Second sec)) =
+  inRange hr 0 23 &&
+  inRange min 0 59 &&
+  inRange sec 0 59
 
 inRange :: (Ord a, Eq a) => a -> a -> a -> Bool
 inRange x a b = a <= x && b >= x

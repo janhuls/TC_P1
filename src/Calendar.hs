@@ -9,17 +9,13 @@ import ParseLib.Derived
 
 -- Exercise 6
 data Calendar = Calendar
-  { header :: Header,
+  { prodid :: Prodid,
     events :: [Event]
   }
   deriving (Eq, Ord)
 
-data Header = Header Prodid Version deriving (Eq, Ord, Show, Generic)
-instance CustomData Header
 newtype Prodid = Prodid String deriving (Eq, Ord, Show, Generic)
 instance CustomData Prodid
-newtype Version = Version String deriving (Eq, Ord, Show, Generic)
-instance CustomData Version
 
 data Event = Event
   { dtStamp :: DTStamp,
@@ -101,14 +97,14 @@ parseStart = symbol (Token "BEGIN" "VCALENDAR") *> epsilon
 parseEnd :: Parser Token ()
 parseEnd = symbol (Token "END" "VCALENDAR") *> epsilon
 
-parseHeader :: Parser Token Header
-parseHeader = (Header <$> parseProdid <*> parseVersion) <|> (flip Header <$> parseVersion <*> parseProdid)
+parseHeader :: Parser Token Prodid
+parseHeader = (parseProdid <* parseVersion) <|> (parseVersion *> parseProdid)
 
 parseProdid :: Parser Token Prodid
 parseProdid = Prodid . getVal <$> satisfyKey "PRODID"
 
-parseVersion :: Parser Token Version
-parseVersion = Version . getVal <$> satisfyKey "VERSION"
+parseVersion :: Parser Token ()
+parseVersion = symbol (Token "VERSION" "2.0") *> epsilon
 
 parseEvent :: Parser Token Event
 parseEvent = parseEventStart *> parseEventParts <* parseEventEnd
@@ -247,8 +243,8 @@ instance Show Calendar where
   show = printCalendar
 
 printCalendar :: Calendar -> String
-printCalendar (Calendar (Header (Prodid prodidString) (Version versionString)) events) =
-  let headerLines = ["BEGIN:VCALENDAR", "VERSION:" ++ versionString, "PRODID:" ++ prodidString]
+printCalendar (Calendar (Prodid prodidString) events) =
+  let headerLines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:" ++ prodidString]
       eventText e = "BEGIN:VEVENT" ++ crlf ++ show e ++ "END:VEVENT"
       body = concatMap (\e -> eventText e ++ crlf) events
   in concatMap (++ crlf) headerLines ++ body ++ "END:VCALENDAR" ++ crlf
