@@ -28,10 +28,18 @@ getDateFromDTEnd :: DTEnd -> DateTime
 getDateFromDTEnd (DTEnd dt) = dt
 
 checkOverlapping :: Calendar -> Bool
-checkOverlapping (Calendar {events = events})= checkOverlappingEvents events where
-    checkOverlappingEvents :: [Event] -> Bool
-    checkOverlappingEvents (e:es) = all (checkEvent (getDateFromDTStart $ dtStart e)) events && checkOverlappingEvents es
+checkOverlapping (Calendar {events = evs}) = any pairsOverlap (pairs evs)
+  where
+    pairs :: [a] -> [(a,a)]
+    pairs xs = [(x,y) | (i,x) <- zip [0..] xs, (j,y) <- zip [0..] xs, i < j]
 
+    pairsOverlap :: (Event, Event) -> Bool
+    pairsOverlap (e1, e2) =
+      let (DTStart s1) = dtStart e1
+          (DTEnd   e1e) = dtEnd e1
+          (DTStart s2) = dtStart e2
+          (DTEnd   e2e) = dtEnd e2
+      in overlaps s1 e1e s2 e2e
 
 yearDays :: Int -> Int
 yearDays y = (y - 1) * 365 + leapYearsUpTo (y - 1)
