@@ -109,16 +109,29 @@ run p s = findEmpty (parse p s)
     findEmpty (_:xs)      = findEmpty xs
 
 -- Exercise 3
+
+print2 :: Int -> String
+print2 n = let s = show n in if length s == 1 then '0' : s else s
+
+print4 :: Int -> String
+print4 n =
+  let s = show n
+      pad = replicate (4 - length s) '0'
+  in pad ++ s
+
+
 printDateTime :: DateTime -> String
-printDateTime (DateTime {date = Date {year = yr, month = mo, day = d},
-                         time = Time {hour = hr, minute = min, second = sec},
-                         utc = u}) = show (runYear yr) ++
-                          concatMap show
-                          [runMonth mo, runDay d ] ++
+printDateTime (DateTime {date = Date {year = Year yr, month = Month mo, day = Day d},
+                         time = Time {hour = Hour hr, minute = Minute min, second = Second sec},
+                         utc = u}) = 
+                          print4 (getIntFromInt4Digits yr) ++
+                          print2 (getIntFromInt2Digits mo) ++
+                          print2 (getIntFromInt2Digits d) ++
                           "T" ++
-                          concatMap show
-                          [runHour hr, runMinute min, runSecond sec]
-                          ++ if u then "Z" else ""
+                          print2 (getIntFromInt2Digits hr) ++
+                          print2 (getIntFromInt2Digits min) ++
+                          print2 (getIntFromInt2Digits sec) ++
+                          if u then "Z" else ""
 
 newtype Int2Digits = Int2Digits Int deriving (Eq, Ord)
 newtype Int4Digits = Int4Digits Int deriving (Eq, Ord)
